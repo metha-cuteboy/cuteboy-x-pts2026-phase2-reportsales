@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>CuteBoy Sales Pulse</title>
+<title>CuteBoy x PTS2026 Phase 2 Report Sales</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -234,7 +234,7 @@
 <div class="topbar">
   <div class="brandmark">CB</div>
   <div class="brand-text">
-    <div class="brand-title">CuteBoy Sales Pulse</div>
+    <div class="brand-title">CuteBoy x PTS2026 Phase 2 Report Sales</div>
     <div class="brand-subtitle">รายงานยอดขายสำหรับพาร์ทเนอร์</div>
   </div>
   <div class="topbar-right">
@@ -707,7 +707,7 @@ function fetchData(forceRefresh){
   hideError();
   setStatus('loading','กำลังโหลดข้อมูล...');
   document.getElementById('refreshBtn').disabled = true;
-  if(API_URL.indexOf('https://script.google.com/macros/s/AKfycbzJoCRs2q-eYvCqh5XVYMYBpVNoiisccWeIG4PQS6nwQCz6VfHr2T2qQ5DjSlfNvcTXLg/exec')>=0){
+  if(!API_URL || API_URL.indexOf('script.google.com/macros')===-1){
     setStatus('error','โหลดข้อมูลไม่สำเร็จ');
     showError('ยังไม่ได้ใส่ API_URL ในไฟล์นี้ — เปิดไฟล์ index.html แก้ค่า API_URL ให้เป็นลิงก์ .../exec จาก Apps Script deployment');
     document.getElementById('refreshBtn').disabled = false;
