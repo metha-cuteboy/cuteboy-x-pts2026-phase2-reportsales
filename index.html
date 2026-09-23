@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>CuteBoy x PTS2026 Phase 2 Report Sales</title>
+<title>CuteBoy x PTS2026 Phase 2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -185,6 +185,9 @@
   tbody tr.product-row{cursor:pointer;transition:background .1s;}
   tbody tr.product-row:hover{background:#faf8f2;}
   tbody tr.product-row:last-child td{border-bottom:none;}
+  .col-img{width:44px;}
+  .cell-img{width:44px;padding-right:2px;}
+  .cell-img img{width:40px;height:40px;border-radius:8px;object-fit:cover;display:block;background:var(--bg);border:1px solid var(--border);}
   .cell-name{font-weight:600;max-width:220px;}
   .cell-spark{text-align:right;}
   .cell-num{text-align:right;white-space:nowrap;color:var(--text-muted);}
@@ -226,6 +229,8 @@
     .filter-label{min-width:0;width:100%;}
     .size-row{grid-template-columns:44px 1fr 56px 80px;}
     .cell-name{max-width:130px;}
+    .cell-img img{width:32px;height:32px;}
+    .col-img,.cell-img{width:36px;}
   }
 </style>
 </head>
@@ -234,7 +239,7 @@
 <div class="topbar">
   <div class="brandmark">CB</div>
   <div class="brand-text">
-    <div class="brand-title">CuteBoy x PTS2026 Phase 2 Report Sales</div>
+    <div class="brand-title">CuteBoy x PTS2026 Phase 2</div>
     <div class="brand-subtitle">รายงานยอดขายสำหรับพาร์ทเนอร์</div>
   </div>
   <div class="topbar-right">
@@ -313,6 +318,7 @@
       <table>
         <thead>
           <tr>
+            <th class="col-img"></th>
             <th>สินค้า</th>
             <th class="spark">แนวโน้ม</th>
             <th class="num">ยอดขาย (ชิ้น)</th>
@@ -321,7 +327,7 @@
           </tr>
         </thead>
         <tbody id="productsTbody">
-          <tr><td colspan="5" class="empty-row">กำลังโหลดข้อมูล...</td></tr>
+          <tr><td colspan="6" class="empty-row">กำลังโหลดข้อมูล...</td></tr>
         </tbody>
       </table>
     </div>
@@ -342,7 +348,7 @@
 <script>
 // ===================== CONFIG =====================
 // วางลิงก์ Apps Script Web App (.../exec) ที่ deploy จาก Code.gs ตรงนี้
-const API_URL = 'https://script.google.com/macros/s/AKfycbx5pzipAGdLzyppAx3qoDUb-fPrH_igvab7V97guNdBuz1r0WND4Ii_BNYv_jOMsXu6Eg/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbx5pzipAGdLzyppAx3qoDUb-fPrH_igvab7V97guNdBuz1r0WND4Ii_BNYv_jOMsXu6Eg/exec'; // แก้เป็นลิงก์ .../exec ของโปรเจกต์นี้
 const SIZE_ORDER = ['S','M','L','XL','2XL','3XL'];
 const PLATFORM_DEFS = {
   'shopee': {label:'Shopee', color:'#FB6B1E'},
@@ -427,10 +433,12 @@ function buildProductsMeta(rows){
     const family = ((p.sku_family==null?'':String(p.sku_family)).trim()) || sku;
     const size = (p.size==null?'':String(p.size)).trim();
     const name = (p.product_name==null?'':String(p.product_name)).trim();
-    productsMap[sku] = {sku, family, size, name};
-    if(!familyMeta[family]) familyMeta[family] = {names:{}, sizes:new Set()};
+    const image = (p.image==null?'':String(p.image)).trim();
+    productsMap[sku] = {sku, family, size, name, image};
+    if(!familyMeta[family]) familyMeta[family] = {names:{}, sizes:new Set(), image:''};
     if(name) familyMeta[family].names[name] = (familyMeta[family].names[name]||0)+1;
     if(size) familyMeta[family].sizes.add(size);
+    if(image && !familyMeta[family].image) familyMeta[family].image = image;
   });
   Object.keys(familyMeta).forEach(fam=>{
     let best=null, bc=-1;
@@ -594,8 +602,12 @@ function renderMovementChart(rows){
     options:{
       responsive:true, maintainAspectRatio:false,
       scales:{
-        x:{ stacked:true, grid:{display:false}, ticks:{color:'#a6a08c', font:{family:'Sarabun',size:11}, maxRotation:0, autoSkip:true} },
-        y:{ stacked:true, grid:{color:'#f0ede3'}, ticks:{color:'#a6a08c', font:{family:'Sarabun',size:11}, callback:v=>fmtBahtShort(v)} }
+        x:{ stacked:true, grid:{display:false}, ticks:{color:'#a6a08c', font:{family:'Sarabun',size:window.innerWidth<480?10:11}, maxRotation:0, autoSkip:true, maxTicksLimit:window.innerWidth<480?6:12} },
+        y:{
+          stacked:true, grid:{color:'#f0ede3'},
+          afterFit:(scale)=>{ scale.width += 16; },
+          ticks:{color:'#a6a08c', font:{family:'Sarabun',size:window.innerWidth<480?10:11}, maxTicksLimit:6, callback:v=>fmtBahtShort(v)}
+        }
       },
       plugins:{
         legend:{display:false},
@@ -620,16 +632,18 @@ function renderProductTable(rows){
     if(idx>=0) a.series[idx]+=r.revenue;
   });
   const list = Object.entries(famAgg).map(([fam,a])=>({
-    fam, name:(familyMeta[fam]&&familyMeta[fam].displayName)||fam, ...a
+    fam, name:(familyMeta[fam]&&familyMeta[fam].displayName)||fam,
+    image:(familyMeta[fam]&&familyMeta[fam].image)||'', ...a
   })).sort((x,y)=>y.revenue-x.revenue);
 
   const tbody = document.getElementById('productsTbody');
   if(!list.length){
-    tbody.innerHTML = '<tr><td colspan="5" class="empty-row">ไม่พบข้อมูลในช่วงเวลาที่เลือก</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-row">ไม่พบข้อมูลในช่วงเวลาที่เลือก</td></tr>';
     return;
   }
   tbody.innerHTML = list.map(item => `
     <tr class="product-row" data-family="${escapeAttr(item.fam)}">
+      <td class="cell-img">${item.image ? `<img src="${escapeAttr(item.image)}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}</td>
       <td class="cell-name">${escapeHtml(item.name)}</td>
       <td class="cell-spark">${sparklineSVG(item.series)}</td>
       <td class="cell-num">${fmtNum(item.qty)}</td>
@@ -679,6 +693,15 @@ document.getElementById('modalOverlay').addEventListener('click', e=>{
   if(e.target.id==='modalOverlay') closeModal();
 });
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+
+// กันปัญหา label แกน Y ทับกราฟ/เลย์เอาต์ไม่ปรับตัวหลังหมุนจอหรือย่อ-ขยายหน้าต่าง (พบมากบน iPad/มือถือ)
+let resizeRerenderTimer = null;
+function scheduleChartRerender(){
+  clearTimeout(resizeRerenderTimer);
+  resizeRerenderTimer = setTimeout(()=>{ renderMovementChart(lastFilteredRows); }, 150);
+}
+window.addEventListener('resize', scheduleChartRerender);
+window.addEventListener('orientationchange', scheduleChartRerender);
 
 // ===================== LOAD (fetch จาก Apps Script JSON API) =====================
 function applyServerData(data){
